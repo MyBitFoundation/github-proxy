@@ -1,9 +1,12 @@
 const express = require('express');
 const GitHub = require('github-api');
 const Promise = require('bluebird');
+const cors = require('cors')
+
 require('dotenv').config();
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 const gh = new GitHub({
