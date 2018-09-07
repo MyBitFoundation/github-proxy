@@ -1,0 +1,15 @@
+language: node_js
+node_js:
+  - "8"
+cache:
+  directories:
+  - node_modules
+yarn: true
+script:
+  - GIT_HASH=$(git rev-parse --short HEAD)
+  - echo ${GIT_HASH} > version
+  - cp CONTRIBUTORS contributors
+  - BUILD_URL=$(npx now --name github.mybit.io -t $NOW_PROD_TOKEN)
+  - if [ "$TRAVIS_BRANCH" = "develop" -a ! "$TRAVIS_PULL_REQUEST" = "false" ]; then npx now alias ${BUILD_URL} github-develop.mybit.io -t $NOW_PROD_TOKEN; fi
+  - if [ "$TRAVIS_BRANCH" = "develop" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then npx now alias ${BUILD_URL} github-staging.mybit.io -t $NOW_PROD_TOKEN; fi
+  - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then npx now alias ${BUILD_URL} github.mybit.io -t $NOW_PROD_TOKEN; fi
