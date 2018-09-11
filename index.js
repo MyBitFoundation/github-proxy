@@ -19,7 +19,7 @@ const web3js = new web3(new web3.providers.HttpProvider(`https://mainnet.infura.
 const parityRegistryContract = new web3js.eth.Contract(parityContractAbi, '0x5F0281910Af44bFb5fC7e86A404d0304B0e042F1');
 
 let issues = [];
-
+let fetchingIssues = false;
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -29,7 +29,7 @@ app.get('/api/issues', (req, res) => {
 })
 
 app.get('/api/issues/resync', (req, res) => {
-  processIssues();
+  fetchAllIssues();
   res.send(200);
 })
 
@@ -130,28 +130,32 @@ async function processIssues(){
       }
 
     }))
-    //remove all issues that don't have a comment with a contract address -> exploitable, need to query etherscan and make sure its a valid contract
-    issuesOfRepo = issuesOfRepo.filter(issue => issue.contractAddress)
+
+    issuesOfRepo = issuesOfRepo.filter(issue => issue && issue.contractAddress && issue.value !== -1)
     return{
       ...issuesOfRepo
     }
   }))
 
   repos = repos.filter(repo => repo !== null)
-  issues = repos;
-  return issues;
+  return repos;
 }
 
-processIssues().then().catch(err => {
-  const date = new Date().toString();
+function fetchAllIssues(){
+  if(fetchingIssues) return;
+  fetchingIssues= true;
+  processIssues().then(repos => {
+    issues = repos;
+    fetchingIssues = false;
+    console.log("Fetched all the issues. Next call to the function will be triggered by the user.")
+  }).catch(err => {
+    console.log(err);
+    console.log("Fetching issues again in 5 seconds.")
+    setTimeout(fetchAllIssues, 5000);
+  })
+}
 
-  console.log(`${date}  -   Error processing issues: `, err);
-  //needs to be discussed - idea being if we have nothing to show to the users then might as well and try to request the information again in case github api goes down for a sec?
-  if(issues.length === 0){
-    console.log((`${date}  -   Trying to pull issues again in 10 seconds...`))
-    setTimeout(processIssues, 10000);
-  }
-})
+fetchAllIssues();
 
 const port = process.env.PORT || 9001;
 app.listen(port);
