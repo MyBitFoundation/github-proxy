@@ -72,7 +72,7 @@ async function processIssues(){
   let repos = response.data.data.organization.repositories.edges;
 
   repos = await Promise.all(repos.map( async ({node}) => {
-    const name = node.name;
+    const repoName = node.name;
     let topics = node.repositoryTopics.edges;
 
     //check if the repo is ddf enabled
@@ -85,7 +85,7 @@ async function processIssues(){
     //handle pagination for issues of a given repo
     while(issuesOfRepo.pageInfo.hasNextPage){
       //pull the next page using the cursor (id of the last issue)
-      const nextPageOfIssues = await getNextPageOfIssuesForRepo(name, issuesOfRepo.edges[issuesOfRepo.edges.length - 1].cursor);
+      const nextPageOfIssues = await getNextPageOfIssuesForRepo(repoName, issuesOfRepo.edges[issuesOfRepo.edges.length - 1].cursor);
       //merge current array of issues for a given repo with the result from the new page of issues
       issuesOfRepo.edges = issuesOfRepo.edges.concat(nextPageOfIssues.data.repository.issues.edges);
       //update the hasNextPage flag with the value of the newly requested page of issues
@@ -99,7 +99,7 @@ async function processIssues(){
       let comments = node.comments;
       //handle comments pagination - same logic as above
       while(comments.pageInfo.hasNextPage){
-        const nextPageComments = await getNextPageOfCommentsOfIssue(name, number, comments.edges[comments.edges.length - 1].cursor);
+        const nextPageComments = await getNextPageOfCommentsOfIssue(repoName, number, comments.edges[comments.edges.length - 1].cursor);
         comments.edges = comments.edges.concat(nextPageComments.data.repository.issue.comments.edges);
         comments.pageInfo.hasNextPage = nextPageComments.data.repository.issue.comments.pageInfo.hasNextPage;
       }
@@ -124,7 +124,7 @@ async function processIssues(){
         url,
         title,
         contractAddress,
-        name,
+        repoName,
         labels,
         value,
       }
