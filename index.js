@@ -132,13 +132,15 @@ async function processIssues(){
     }))
 
     issuesOfRepo = issuesOfRepo.filter(issue => issue && issue.contractAddress && issue.value !== -1)
-    return{
-      ...issuesOfRepo
-    }
+    return issuesOfRepo
   }))
 
   repos = repos.filter(repo => repo !== null)
-  return repos;
+  let issuesToReturn = [];
+  repos.forEach((issuesOfRepo, index) => {
+    issuesOfRepo.forEach(issue => issuesToReturn.push(issue));
+  });
+  return issuesToReturn;
 }
 
 function fetchAllIssues(){
