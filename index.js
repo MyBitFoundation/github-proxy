@@ -15,8 +15,6 @@ const {
   queryNextPageOfIssuesForRepo} = require('./constants');
 const parityContractAbi = require('./parityContractAbi');
 
-console.log(process.env.INFURA_API_KEY)
-
 const web3js = new web3(new web3.providers.HttpProvider(`https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`));
 const parityRegistryContract = new web3js.eth.Contract(parityContractAbi, '0x5F0281910Af44bFb5fC7e86A404d0304B0e042F1');
 
