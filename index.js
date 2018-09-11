@@ -35,48 +35,35 @@ app.get('/api/issues/resync', (req, res) => {
 
 async function getErc20Symbol(address){
   let tokenInfo = await parityRegistryContract.methods
-  .fromAddress(address)
-  .call();
-
+    .fromAddress(address)
+    .call()
   return tokenInfo['1'];
 }
 
 async function getValueOfContract(contractAddress){
-  try{
-    const {data} = await axios(`http://api.etherscan.io/api?module=account&action=tokentx&address=${contractAddress}`)
-    //case where the contract has no transactions
-    if(data.status === "0"){
-      return -1;
-    }
-    const valueFromWei = unit.fromWei(data.result[0].value, 'ether');
-
-    let tokenSymbol = data.result[0].tokenSymbol;
-    if(tokenSymbol === ''){
-      tokenSymbol = await getErc20Symbol(data.result[0].contractAddress);
-    }
-
-    return `${tokenSymbol} ${valueFromWei}` ;
-  }catch(err){
-    throw err;
+  const {data} = await axios(`http://api.etherscan.io/api?module=account&action=tokentx&address=${contractAddress}`)
+  //case where the contract has no transactions
+  if(data.status === "0"){
+    return -1;
   }
+  const valueFromWei = unit.fromWei(data.result[0].value, 'ether');
+
+  let tokenSymbol = data.result[0].tokenSymbol;
+  if(tokenSymbol === ''){
+    tokenSymbol = await getErc20Symbol(data.result[0].contractAddress);
+  }
+
+  return `${tokenSymbol} ${valueFromWei}` ;
 }
 
 async function getNextPageOfCommentsOfIssue(reponame, issueNumber, cursor){
-  try{
-    const { data } = await axios(configForGraphGlRequest(queryNextPageOfCommentsForIssue(reponame, issueNumber, cursor)))
-    return data;
-  }catch(err){
-    throw err;
-  }
+  const { data } = await axios(configForGraphGlRequest(queryNextPageOfCommentsForIssue(reponame, issueNumber, cursor)))
+  return data;
 }
 
 async function getNextPageOfIssuesForRepo(reponame, cursor){
-  try{
-    const { data } = await axios(configForGraphGlRequest(queryNextPageOfIssuesForRepo(reponame, cursor)))
-    return data;
-  }catch(err){
-    throw err;
-  }
+  const { data } = await axios(configForGraphGlRequest(queryNextPageOfIssuesForRepo(reponame, cursor)))
+  return data;
 }
 
 async function processIssues(){
@@ -155,15 +142,16 @@ async function processIssues(){
   return issues;
 }
 
-try{
-  processIssues();
-}catch(err){
-  console.log("Error processing issues: ", err);
+processIssues().then().catch(err => {
+  const date = new Date().toString();
+
+  console.log(`${date}  -   Error processing issues: `, err);
   //needs to be discussed - idea being if we have nothing to show to the users then might as well and try to request the information again in case github api goes down for a sec?
   if(issues.length === 0){
+    console.log((`${date}  -   Trying to pull issues again in 10 seconds...`))
     setTimeout(processIssues, 10000);
   }
-}
+})
 
 const port = process.env.PORT || 9001;
 app.listen(port);
