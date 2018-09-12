@@ -150,19 +150,6 @@ async function processIssues(){
     //map all issues to pull information about each issue
     issuesOfRepo = await Promise.all(issuesOfRepo.edges.map( async ({node}) => {
       const {createdAt, url, title, number, state} = node;
-      let merged = false;
-
-      //determined whether a referenced PR was merged
-      node.timeline.edges.forEach(({node}) => {
-        if(node.source && node.source.state === "MERGED"){
-          merged = true;
-          uniqueContributors[node.source.author.login] = 0;
-        }
-      })
-
-      if(state === "CLOSED" && !merged){
-        return null;
-      }
 
       const labels = node.labels.edges.map(({node}) => node.name);
       let comments = node.comments;
@@ -185,6 +172,23 @@ async function processIssues(){
         }
       }
       const valueInfo = contractAddress && await getValueOfContract(contractAddress);
+
+      let merged = false;
+
+      //determined whether a referenced PR was merged
+      node.timeline.edges.forEach(({node}) => {
+        if(node.source && node.source.state === "MERGED"){
+          merged = true;
+          //the issue needs to have a valid contract with a value for us to consider this a contributor for the ddf
+          if(valueInfo){
+            uniqueContributors[node.source.author.login] = 0;
+          }
+        }
+      })
+
+      if(state === "CLOSED" && !merged){
+        return null;
+      }
 
       return{
         createdAt,
