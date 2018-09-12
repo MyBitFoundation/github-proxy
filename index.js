@@ -39,11 +39,6 @@ app.get('/api/issues', (req, res) => {
     });
 })
 
-app.get('/api/issues/resync', (req, res) => {
-  fetchAllIssues();
-  res.send(200);
-})
-
 async function getCurrentUsdPriceOf(ticker){
   const {data} = await axios(`https://api.coinmarketcap.com/v2/ticker/${ticker}/`)
   return data.data.quotes.USD.price;
@@ -224,6 +219,7 @@ async function processIssues(){
 }
 
 function mainCycle(){
+  console.log()
   fetchAllIssues();
   getFundingInfo();
 }
@@ -243,8 +239,9 @@ function fetchAllIssues(){
   processIssues().then(repos => {
     issues = repos;
     fetchingIssues = false;
-    console.log("Fetched all the issues. Next call to the function will be triggered by the user.")
+    console.log("Fetched all the issues.")
   }).catch(err => {
+    fetchingIssues = false;
     console.log(err);
     console.log("Fetching issues again in 5 seconds.")
     setTimeout(fetchAllIssues, 5000);
@@ -252,6 +249,7 @@ function fetchAllIssues(){
 }
 
 mainCycle();
+setInterval(mainCycle, 30 * 1000)
 
 const port = process.env.PORT || 9001;
 app.listen(port);
