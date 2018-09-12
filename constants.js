@@ -41,6 +41,9 @@ query {
                           ... on PullRequest{
                             url
                             state
+                            author{
+                              login
+                            }
                           }
                         }
                       }
@@ -163,10 +166,19 @@ const configForGraphGlRequest = (query) => {
 
 const etherscanEndPoint = (txId) => `http://api.etherscan.io/api?module=account&action=tokentx&address=${txId}`;
 
+const addressesUsedToFund = [
+  "0x7389c003988802a713af73e82777b1c702077c6f",
+  "0x7601387f7bc11f0ec554fe8d068af725781f004d"
+]
+
+const mybitTickerCoinmarketcap = 1902;
+
 module.exports = {
   queryAllIssuesAndComments,
   queryNextPageOfCommentsForIssue,
   queryNextPageOfIssuesForRepo,
   configForGraphGlRequest,
-  etherscanEndPoint
+  etherscanEndPoint,
+  addressesUsedToFund,
+  mybitTickerCoinmarketcap
 }

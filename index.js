@@ -12,7 +12,9 @@ const {
   queryNextPageOfCommentsForIssue,
   configForGraphGlRequest,
   etherscanEndPoint,
-  queryNextPageOfIssuesForRepo} = require('./constants');
+  queryNextPageOfIssuesForRepo,
+  addressesUsedToFund,
+  mybitTickerCoinmarketcap} = require('./constants');
 const parityContractAbi = require('./parityContractAbi');
 
 const web3js = new web3(new web3.providers.HttpProvider(`https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`));
@@ -20,18 +22,66 @@ const parityRegistryContract = new web3js.eth.Contract(parityContractAbi, '0x5F0
 
 let issues = [];
 let fetchingIssues = false;
+let numberOfUniqueContributors = 0;
+let totalValueOfFund = 0;
+let totalPayoutOfFund = 0;
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 app.get('/api/issues', (req, res) => {
-    res.send(issues);
+    res.send({
+      issues,
+      numberOfUniqueContributors,
+      totalValueOfFund,
+      totalPayoutOfFund
+    });
 })
 
 app.get('/api/issues/resync', (req, res) => {
   fetchAllIssues();
   res.send(200);
 })
+
+async function getCurrentUsdPriceOf(ticker){
+  const {data} = await axios(`https://api.coinmarketcap.com/v2/ticker/${ticker}/`)
+  return data.data.quotes.USD.price;
+}
+
+async function getTotalPayoutAndValue(){
+  const mybitInUsd = await getCurrentUsdPriceOf(mybitTickerCoinmarketcap);
+  let amountsPerAddress = await Promise.all(addressesUsedToFund.map(async address => {
+    const {data} = await axios(`http://api.etherscan.io/api?module=account&action=tokentx&address=${address}`)
+    let sent = 0;
+    let received = 0;
+
+    data.result.forEach(tx => {
+      //received
+      if(tx.to == address){
+        received += Number(unit.fromWei(tx.value, 'ether'))
+      }
+      else{
+        sent += Number(unit.fromWei(tx.value, 'ether'))
+      }
+    })
+
+    return {
+      sent,
+      received
+    }
+  }))
+
+  let totalPayoutTmp = 0, totalValueTmp = 0;
+
+  amountsPerAddress.forEach(address => {
+    totalValueTmp += (address.received - address.sent)
+    totalPayoutTmp += address.sent
+  })
+
+  totalValueOfFund = Number((totalValueTmp * mybitInUsd).toFixed(2)).toLocaleString();
+  totalPayoutOfFund = Number((totalPayoutTmp * mybitInUsd).toFixed(2)).toLocaleString();
+}
 
 async function getErc20Symbol(address){
   let tokenInfo = await parityRegistryContract.methods
@@ -74,6 +124,7 @@ async function processIssues(){
   //pull all the repositories with issues and comments
   const response = await axios(configForGraphGlRequest(queryAllIssuesAndComments));
   let repos = response.data.data.organization.repositories.edges;
+  let uniqueContributors = {};
 
   repos = await Promise.all(repos.map( async ({node}) => {
     const repoName = node.name;
@@ -105,6 +156,7 @@ async function processIssues(){
       node.timeline.edges.forEach(({node}) => {
         if(node.source && node.source.state === "MERGED"){
           merged = true;
+          uniqueContributors[node.source.author.login] = 0;
         }
       })
 
@@ -145,7 +197,6 @@ async function processIssues(){
         tokenSymbol: valueInfo && valueInfo.tokenSymbol,
         value: valueInfo ? valueInfo.value : -1,
       }
-
     }))
 
     issuesOfRepo = issuesOfRepo.filter(issue => issue && issue.contractAddress && issue.value !== -1)
@@ -157,7 +208,24 @@ async function processIssues(){
   repos.forEach((issuesOfRepo, index) => {
     issuesOfRepo.forEach(issue => issuesToReturn.push(issue));
   });
+
+  numberOfUniqueContributors = Object.keys(uniqueContributors).length;
+
   return issuesToReturn;
+}
+
+function mainCycle(){
+  fetchAllIssues();
+  getFundingInfo();
+}
+
+function getFundingInfo(){
+  getTotalPayoutAndValue()
+    .then()
+    .catch(err => {
+    console.log("error fetching total fund value" + err);
+    setTimeout(getFundingInfo, 5000);
+  })
 }
 
 function fetchAllIssues(){
@@ -174,7 +242,7 @@ function fetchAllIssues(){
   })
 }
 
-fetchAllIssues();
+mainCycle();
 
 const port = process.env.PORT || 9001;
 app.listen(port);
