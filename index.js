@@ -14,7 +14,8 @@ const {
   etherscanEndPoint,
   queryNextPageOfIssuesForRepo,
   addressesUsedToFund,
-  mybitTickerCoinmarketcap} = require('./constants');
+  mybitTickerCoinmarketcap,
+  refreshTimeInSeconds} = require('./constants');
 const parityContractAbi = require('./parityContractAbi');
 
 const web3js = new web3(new web3.providers.HttpProvider(`https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`));
@@ -249,7 +250,7 @@ function fetchAllIssues(){
 }
 
 mainCycle();
-setInterval(mainCycle, 30 * 1000)
+setInterval(mainCycle, refreshTimeInSeconds * 1000)
 
 const port = process.env.PORT || 9001;
 app.listen(port);
