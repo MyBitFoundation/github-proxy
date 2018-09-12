@@ -98,7 +98,20 @@ async function processIssues(){
 
     //map all issues to pull information about each issue
     issuesOfRepo = await Promise.all(issuesOfRepo.edges.map( async ({node}) => {
-      const {createdAt, state, url, title, number} = node;
+      const {createdAt, url, title, number, state} = node;
+      let merged = false;
+
+      //determined whether a referenced PR was merged
+      node.timeline.edges.forEach(({node}) => {
+        if(node.source && node.source.state === "MERGED"){
+          merged = true;
+        }
+      })
+
+      if(state === "CLOSED" && !merged){
+        return null;
+      }
+
       const labels = node.labels.edges.map(({node}) => node.name);
       let comments = node.comments;
       //handle comments pagination - same logic as above
@@ -119,12 +132,11 @@ async function processIssues(){
           }
         }
       }
-
       const valueInfo = contractAddress && await getValueOfContract(contractAddress);
 
       return{
         createdAt,
-        state,
+        merged,
         url,
         title,
         contractAddress,

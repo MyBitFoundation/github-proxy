@@ -28,6 +28,26 @@ query {
               node{
                 createdAt,
                 state,
+                timeline(first: 10){
+                  pageInfo{
+                    hasNextPage
+                  }
+                  edges{
+                    node{
+                      ... on CrossReferencedEvent{
+                        url
+                        target
+                        source{
+                          ... on PullRequest{
+                            url
+                            state
+                          }
+                        }
+                      }
+                    }
+                    cursor
+                  }
+                },
                 labels(first: ${LABELS_PER_PAGE}){
                   edges{
                     node{
