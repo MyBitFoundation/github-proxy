@@ -1,5 +1,6 @@
 {
   "env": {
-    "GITHUB_TOKEN": "@github-token"
+    "GITHUB_TOKEN": "@github-token",
+    "INFURA_API_KEY": "@infura-api-key"
   }
 }
