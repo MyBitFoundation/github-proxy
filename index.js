@@ -92,12 +92,17 @@ async function getErc20Symbol(address){
 
 async function getValueOfContract(contractAddress){
   const {data} = await axios(`http://api.etherscan.io/api?module=account&action=tokentx&address=${contractAddress}`)
-  let value = -1, tokenSymbol = -1;
+  let value = 0, tokenSymbol;
   //case where the contract has no transactions
   if(data.status === "0"){
     return null;
   }
-  value = unit.fromWei(data.result[0].value, 'ether');
+  //pull total value: sum of all transfers sent to the address
+  data.result.forEach(tx => {
+    if(tx.to === contractAddress){
+      value += Number(unit.fromWei(tx.value, 'ether'));
+    }
+  })
 
   tokenSymbol = data.result[0].tokenSymbol;
   if(tokenSymbol === ''){
@@ -199,11 +204,11 @@ async function processIssues(){
         repoName,
         labels,
         tokenSymbol: valueInfo && valueInfo.tokenSymbol,
-        value: valueInfo ? valueInfo.value : -1,
+        value: valueInfo ? valueInfo.value : 0,
       }
     }))
 
-    issuesOfRepo = issuesOfRepo.filter(issue => issue && issue.contractAddress && issue.value !== -1)
+    issuesOfRepo = issuesOfRepo.filter(issue => issue && issue.contractAddress && issue.value !== 0)
     return issuesOfRepo
   }))
 
