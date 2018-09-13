@@ -14,7 +14,8 @@ const {
   etherscanEndPoint,
   queryNextPageOfIssuesForRepo,
   addressesUsedToFund,
-  mybitTickerCoinmarketcap} = require('./constants');
+  mybitTickerCoinmarketcap,
+  refreshTimeInSeconds} = require('./constants');
 const parityContractAbi = require('./parityContractAbi');
 
 const web3js = new web3(new web3.providers.HttpProvider(`https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`));
@@ -37,11 +38,6 @@ app.get('/api/issues', (req, res) => {
       totalValueOfFund,
       totalPayoutOfFund
     });
-})
-
-app.get('/api/issues/resync', (req, res) => {
-  fetchAllIssues();
-  res.send(200);
 })
 
 async function getCurrentUsdPriceOf(ticker){
@@ -224,6 +220,7 @@ async function processIssues(){
 }
 
 function mainCycle(){
+  console.log()
   fetchAllIssues();
   getFundingInfo();
 }
@@ -243,8 +240,9 @@ function fetchAllIssues(){
   processIssues().then(repos => {
     issues = repos;
     fetchingIssues = false;
-    console.log("Fetched all the issues. Next call to the function will be triggered by the user.")
+    console.log("Fetched all the issues.")
   }).catch(err => {
+    fetchingIssues = false;
     console.log(err);
     console.log("Fetching issues again in 5 seconds.")
     setTimeout(fetchAllIssues, 5000);
@@ -252,6 +250,7 @@ function fetchAllIssues(){
 }
 
 mainCycle();
+setInterval(mainCycle, refreshTimeInSeconds * 1000)
 
 const port = process.env.PORT || 9001;
 app.listen(port);
