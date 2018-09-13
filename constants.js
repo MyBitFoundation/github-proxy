@@ -172,6 +172,7 @@ const addressesUsedToFund = [
 ]
 
 const mybitTickerCoinmarketcap = 1902;
+const refreshTimeInSeconds = 30;
 
 module.exports = {
   queryAllIssuesAndComments,
@@ -180,5 +181,6 @@ module.exports = {
   configForGraphGlRequest,
   etherscanEndPoint,
   addressesUsedToFund,
-  mybitTickerCoinmarketcap
+  mybitTickerCoinmarketcap,
+  refreshTimeInSeconds
 }
