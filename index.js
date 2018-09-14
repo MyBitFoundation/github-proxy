@@ -222,12 +222,14 @@ async function processIssues(){
 
 function mainCycle(){
   getCurrentUsdPriceOf(mybitTickerCoinmarketcap)
-    .then(val => mybitInUsd=val).catch(err => {
+    .then(val => {
+      mybitInUsd=val
+      fetchAllIssues();
+      getFundingInfo();
+    }).catch(err => {
       setTimeout(mainCycle, 2000);
       return;
     })
-  fetchAllIssues();
-  getFundingInfo();
 }
 
 function getFundingInfo(){
