@@ -26,6 +26,7 @@ let fetchingIssues = false;
 let numberOfUniqueContributors = 0;
 let totalValueOfFund = 0;
 let totalPayoutOfFund = 0;
+let mybitInUsd = 0;
 
 const app = express();
 app.use(cors());
@@ -46,7 +47,6 @@ async function getCurrentUsdPriceOf(ticker){
 }
 
 async function getTotalPayoutAndValue(){
-  const mybitInUsd = await getCurrentUsdPriceOf(mybitTickerCoinmarketcap);
   let amountsPerAddress = await Promise.all(addressesUsedToFund.map(async address => {
     const {data} = await axios(`http://api.etherscan.io/api?module=account&action=tokentx&address=${address}`)
     let sent = 0;
@@ -201,6 +201,7 @@ async function processIssues(){
         labels,
         tokenSymbol: valueInfo && valueInfo.tokenSymbol,
         value: valueInfo ? valueInfo.value : 0,
+        mybitInUsd: valueInfo ? Number(valueInfo.value * mybitInUsd).toFixed(2) : 0,
       }
     }))
 
@@ -220,7 +221,11 @@ async function processIssues(){
 }
 
 function mainCycle(){
-  console.log()
+  getCurrentUsdPriceOf(mybitTickerCoinmarketcap)
+    .then(val => mybitInUsd=val).catch(err => {
+      setTimeout(mainCycle, 2000);
+      return;
+    })
   fetchAllIssues();
   getFundingInfo();
 }
