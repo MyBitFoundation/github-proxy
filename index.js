@@ -227,6 +227,7 @@ function mainCycle(){
       fetchAllIssues();
       getFundingInfo();
     }).catch(err => {
+      console.log("Failed to fetch MYB price, error: " + err)
       setTimeout(mainCycle, 2000);
       return;
     })
