@@ -46,12 +46,11 @@ async function getCurrentUsdPriceOf(ticker){
   return data.data.quotes.USD.price;
 }
 
-async function getTotalPayoutAndValue(){
+async function getTotalValue(){
   let amountsPerAddress = await Promise.all(addressesUsedToFund.map(async address => {
     const {data} = await axios(`http://api.etherscan.io/api?module=account&action=tokentx&address=${address}`)
     let sent = 0;
     let received = 0;
-
     data.result.forEach(tx => {
       //received
       if(tx.to == address){
@@ -68,15 +67,13 @@ async function getTotalPayoutAndValue(){
     }
   }))
 
-  let totalPayoutTmp = 0, totalValueTmp = 0;
+  let totalValueTmp = 0;
 
   amountsPerAddress.forEach(address => {
     totalValueTmp += (address.received - address.sent)
-    totalPayoutTmp += address.sent
   })
 
-  totalValueOfFund = Number((totalValueTmp * mybitInUsd).toFixed(2)).toLocaleString();
-  totalPayoutOfFund = Number((totalPayoutTmp * mybitInUsd).toFixed(2)).toLocaleString();
+  return Number(totalValueTmp * mybitInUsd);
 }
 
 async function getErc20Symbol(address){
@@ -121,11 +118,13 @@ async function getNextPageOfIssuesForRepo(reponame, cursor){
   return data;
 }
 
-async function processIssues(){
+async function processIssues(totalFundValue){
   //pull all the repositories with issues and comments
   const response = await axios(configForGraphGlRequest(queryAllIssuesAndComments));
   let repos = response.data.data.organization.repositories.edges;
   let uniqueContributors = {};
+  let totalPayout = 0;
+
 
   repos = await Promise.all(repos.map( async ({node}) => {
     const repoName = node.name;
@@ -191,6 +190,13 @@ async function processIssues(){
         return null;
       }
 
+      if(merged && valueInfo){
+        totalPayout +=  Number(valueInfo.value * mybitInUsd);
+      }
+      if(!merged && valueInfo){
+        totalFundValue += Number(valueInfo.value * mybitInUsd);
+      }
+
       return{
         createdAt,
         merged,
@@ -215,8 +221,10 @@ async function processIssues(){
     issuesOfRepo.forEach(issue => issuesToReturn.push(issue));
   });
 
-  numberOfUniqueContributors = Object.keys(uniqueContributors).length;
 
+  numberOfUniqueContributors = Object.keys(uniqueContributors).length;
+  totalPayoutOfFund = totalPayout.toFixed(2).toLocaleString();
+  totalValueOfFund = totalFundValue.toFixed(2).toLocaleString();
   return issuesToReturn;
 }
 
@@ -224,7 +232,6 @@ function mainCycle(){
   getCurrentUsdPriceOf(mybitTickerCoinmarketcap)
     .then(val => {
       mybitInUsd=val
-      fetchAllIssues();
       getFundingInfo();
     }).catch(err => {
       console.log("Failed to fetch MYB price, error: " + err)
@@ -234,18 +241,18 @@ function mainCycle(){
 }
 
 function getFundingInfo(){
-  getTotalPayoutAndValue()
-    .then()
+  getTotalValue()
+    .then(totalFundValue => fetchAllIssues(totalFundValue))
     .catch(err => {
     console.log("error fetching total fund value" + err);
     setTimeout(getFundingInfo, 5000);
   })
 }
 
-function fetchAllIssues(){
+function fetchAllIssues(totalFundValue){
   if(fetchingIssues) return;
   fetchingIssues= true;
-  processIssues().then(repos => {
+  processIssues(totalFundValue).then(repos => {
     issues = repos;
     fetchingIssues = false;
     console.log("Fetched all the issues.")
