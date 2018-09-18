@@ -123,8 +123,8 @@ async function processIssues(totalFundValue){
   const response = await axios(configForGraphGlRequest(queryAllIssuesAndComments));
   let repos = response.data.data.organization.repositories.edges;
   let uniqueContributors = {};
+  let issuesToReturn = [];
   let totalPayout = 0;
-
 
   repos = await Promise.all(repos.map( async ({node}) => {
     const repoName = node.name;
@@ -171,6 +171,7 @@ async function processIssues(totalFundValue){
           }
         }
       }
+
       const valueInfo = contractAddress && await getValueOfContract(contractAddress);
 
       let merged = false;
@@ -216,7 +217,6 @@ async function processIssues(totalFundValue){
   }))
 
   repos = repos.filter(repo => repo !== null)
-  let issuesToReturn = [];
   repos.forEach((issuesOfRepo, index) => {
     issuesOfRepo.forEach(issue => issuesToReturn.push(issue));
   });
@@ -225,6 +225,7 @@ async function processIssues(totalFundValue){
   numberOfUniqueContributors = Object.keys(uniqueContributors).length;
   totalPayoutOfFund = totalPayout.toFixed(2).toLocaleString();
   totalValueOfFund = totalFundValue.toFixed(2).toLocaleString();
+
   return issuesToReturn;
 }
 
@@ -242,7 +243,7 @@ function mainCycle(){
 
 function getFundingInfo(){
   getTotalValue()
-    .then(totalFundValue => fetchAllIssues(totalFundValue))
+    .then(fetchAllIssues)
     .catch(err => {
     console.log("error fetching total fund value" + err);
     setTimeout(getFundingInfo, 5000);
@@ -260,7 +261,7 @@ function fetchAllIssues(totalFundValue){
     fetchingIssues = false;
     console.log(err);
     console.log("Fetching issues again in 5 seconds.")
-    setTimeout(fetchAllIssues, 5000);
+    setTimeout(() => fetchAllIssues(totalFundValue), 5000);
   })
 }
 
