@@ -123,7 +123,6 @@ async function processIssues(totalFundValue){
   const response = await axios(configForGraphGlRequest(queryAllIssuesAndComments));
   let repos = response.data.data.organization.repositories.edges;
   let uniqueContributors = {};
-  let issuesToReturn = [];
   let totalPayout = 0;
 
   repos = await Promise.all(repos.map( async ({node}) => {
@@ -217,10 +216,10 @@ async function processIssues(totalFundValue){
   }))
 
   repos = repos.filter(repo => repo !== null)
+  let issuesToReturn = [];
   repos.forEach((issuesOfRepo, index) => {
     issuesOfRepo.forEach(issue => issuesToReturn.push(issue));
   });
-
 
   numberOfUniqueContributors = Object.keys(uniqueContributors).length;
   totalPayoutOfFund = totalPayout.toFixed(2).toLocaleString();
