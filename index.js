@@ -222,8 +222,8 @@ async function processIssues(totalFundValue){
   });
 
   numberOfUniqueContributors = Object.keys(uniqueContributors).length;
-  totalPayoutOfFund = totalPayout.toFixed(2).toLocaleString();
-  totalValueOfFund = totalFundValue.toFixed(2).toLocaleString();
+  totalPayoutOfFund = Number(totalPayout.toFixed(2)).toLocaleString();
+  totalValueOfFund = Number(totalFundValue.toFixed(2)).toLocaleString();
 
   return issuesToReturn;
 }
