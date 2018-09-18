@@ -211,7 +211,7 @@ async function processIssues(totalFundValue){
       }
     }))
 
-    issuesOfRepo = issuesOfRepo.filter(issue => issue && issue.contractAddress && issue.value !== 0)
+    issuesOfRepo = issuesOfRepo.filter(issue => issue && issue.contractAddress)
     return issuesOfRepo
   }))
 
