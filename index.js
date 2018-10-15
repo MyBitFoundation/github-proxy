@@ -222,8 +222,8 @@ async function processIssues(totalFundValue){
   });
 
   numberOfUniqueContributors = Object.keys(uniqueContributors).length;
-  totalPayoutOfFund = Number(totalPayout);
-  totalValueOfFund = Number(totalFundValue);
+  totalPayoutOfFund = totalPayout;
+  totalValueOfFund = totalFundValue;
 
   return issuesToReturn;
 }
