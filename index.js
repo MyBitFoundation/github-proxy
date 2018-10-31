@@ -6,6 +6,7 @@ const axios = require('axios');
 const unit = require('ethjs-unit');
 const web3 = require('web3');
 const ethereumRegex = require('ethereum-regex');
+const fs = require('fs');
 
 const {
   queryAllIssuesAndComments,
@@ -34,13 +35,29 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/api/issues', (req, res) => {
-    res.send({
-      issues,
-      numberOfUniqueContributors,
-      totalValueOfFund,
-      totalPayoutOfFund
-    });
-})
+  const result = {
+    issues,
+    numberOfUniqueContributors,
+    totalValueOfFund,
+    totalPayoutOfFund
+  };
+
+  fs.writeFile('./issues.json', JSON.stringify(result), (err) => {
+    if (err) {
+      console.error(err);
+    }
+    res.send(result);
+  });
+});
+
+app.get('/api/local-issues', (req, res) => {
+  fs.readFile('./issues.json', (err, data) => {
+    if (err) {
+      return res.status(404).json({error: 'No data stored locally'}).end();
+    }
+    res.send(data.toString('utf-8'));
+  });
+});
 
 async function getCurrentUsdPriceOf(ticker){
   const {data} = await axios(`https://api.coinmarketcap.com/v2/ticker/${ticker}/`)
