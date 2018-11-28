@@ -11,10 +11,11 @@ const {
   queryAllIssuesAndComments,
   queryNextPageOfCommentsForIssue,
   configForGraphGlRequest,
-  etherscanEndPoint,
   queryNextPageOfIssuesForRepo,
+  queryNextPageOfTimelineForIssue,
   addressesUsedToFund,
   mybitTickerCoinmarketcap,
+  etherscanEndPoint,
   refreshTimeInSeconds} = require('./constants');
 const parityContractAbi = require('./parityContractAbi');
 
@@ -48,7 +49,7 @@ async function getCurrentUsdPriceOf(ticker){
 
 async function getTotalValue(){
   let amountsPerAddress = await Promise.all(addressesUsedToFund.map(async address => {
-    const {data} = await axios(`http://api.etherscan.io/api?module=account&action=tokentx&address=${address}`)
+    const {data} = await axios(etherscanEndPoint(address))
     let sent = 0;
     let received = 0;
     data.result.forEach(tx => {
@@ -113,6 +114,11 @@ async function getNextPageOfCommentsOfIssue(reponame, issueNumber, cursor){
   return data;
 }
 
+async function getNextPageOfTimelineOfIssue(reponame, issueNumber, cursor){
+  const { data } = await axios(configForGraphGlRequest(queryNextPageOfTimelineForIssue(reponame, issueNumber, cursor)))
+  return data;
+}
+
 async function getNextPageOfIssuesForRepo(reponame, cursor){
   const { data } = await axios(configForGraphGlRequest(queryNextPageOfIssuesForRepo(reponame, cursor)))
   return data;
@@ -146,6 +152,7 @@ async function processIssues(totalFundValue){
       issuesOfRepo.pageInfo.hasNextPage = nextPageOfIssues.data.repository.issues.pageInfo.hasNextPage;
     }
 
+
     //map all issues to pull information about each issue
     issuesOfRepo = await Promise.all(issuesOfRepo.edges.map( async ({node}) => {
       const {createdAt, url, title, number, state} = node;
@@ -175,8 +182,17 @@ async function processIssues(totalFundValue){
 
       let merged = false;
 
+      let timeline = node.timeline;
+      //handle timeline (list of events) pagination - same logic as above
+      while(timeline.pageInfo.hasNextPage){
+        const nextPageTimeline = await getNextPageOfTimelineOfIssue(repoName, number, timeline.edges[timeline.edges.length - 1].cursor);
+        timeline.edges = timeline.edges.concat(nextPageTimeline.data.repository.issue.timeline.edges);
+        timeline.pageInfo.hasNextPage = nextPageTimeline.data.repository.issue.timeline.pageInfo.hasNextPage;
+      }
+      timeline = timeline.edges;
+
       //determined whether a referenced PR was merged
-      node.timeline.edges.forEach(({node}) => {
+      timeline.forEach(({node}) => {
         if(node.source && node.source.state === "MERGED"){
           merged = true;
           //the issue needs to have a valid contract with a value for us to consider this a contributor for the ddf

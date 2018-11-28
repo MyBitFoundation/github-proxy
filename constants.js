@@ -1,6 +1,7 @@
 const COMMENTS_PER_PAGE = 10;
+const EVENTS_PER_PAGE = 10;
 const LABELS_PER_PAGE = 10;
-const ISSUES_PER_PAGE = 100;
+const ISSUES_PER_PAGE = 10;
 const queryAllIssuesAndComments = `
 query {
   organization(login: "MyBitFoundation"){
@@ -28,7 +29,7 @@ query {
               node{
                 createdAt,
                 state,
-                timeline(first: 10){
+                timeline(first: ${EVENTS_PER_PAGE}){
                   pageInfo{
                     hasNextPage
                   }
@@ -36,7 +37,6 @@ query {
                     node{
                       ... on CrossReferencedEvent{
                         url
-                        target
                         source{
                           ... on PullRequest{
                             url
@@ -108,6 +108,37 @@ query {
   }
 }`;
 
+
+const queryNextPageOfTimelineForIssue = (repoName, issueNumber, cursor) => `
+query {
+  repository(owner: "MyBitFoundation" name: "${repoName}"){
+   issue(number: ${issueNumber}){
+      timeline(first: ${EVENTS_PER_PAGE} after: "${cursor}"){
+        pageInfo{
+          hasNextPage
+        }
+        edges{
+          node{
+            ... on CrossReferencedEvent{
+              url
+              source{
+                ... on PullRequest{
+                  url
+                  state
+                  author{
+                    login
+                  }
+                }
+              }
+            }
+          }
+          cursor
+        }
+      }
+    }
+  }
+}`;
+
 const queryNextPageOfIssuesForRepo = (repoName, cursor) => `
 query {
   repository(owner: "MyBitFoundation" name: "${repoName}"){
@@ -119,6 +150,28 @@ query {
       node{
         createdAt,
         state,
+        timeline(first: ${EVENTS_PER_PAGE}){
+          pageInfo{
+            hasNextPage
+          }
+          edges{
+            node{
+              ... on CrossReferencedEvent{
+                url
+                source{
+                  ... on PullRequest{
+                    url
+                    state
+                    author{
+                      login
+                    }
+                  }
+                }
+              }
+            }
+            cursor
+          }
+        },
         labels(first: ${LABELS_PER_PAGE}){
           edges{
             node{
@@ -151,7 +204,7 @@ query {
 }
 `;
 
-const configForGraphGlRequest = (query) => {
+const configForGraphGlRequest = query => {
   return{
     url: 'https://api.github.com/graphql',
     method: 'post',
@@ -164,7 +217,7 @@ const configForGraphGlRequest = (query) => {
   }
 }
 
-const etherscanEndPoint = (txId) => `http://api.etherscan.io/api?module=account&action=tokentx&address=${txId}`;
+const etherscanEndPoint = address => `http://api.etherscan.io/api?module=account&action=tokentx&address=${address}&apikey=${process.env.ETHERSCAN_API_KEY}`
 
 const addressesUsedToFund = [
   "0x7601387f7bc11f0ec554fe8d068af725781f004d",
@@ -177,6 +230,7 @@ module.exports = {
   queryAllIssuesAndComments,
   queryNextPageOfCommentsForIssue,
   queryNextPageOfIssuesForRepo,
+  queryNextPageOfTimelineForIssue,
   configForGraphGlRequest,
   etherscanEndPoint,
   addressesUsedToFund,
