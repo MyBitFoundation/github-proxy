@@ -20,8 +20,5 @@
     "express": "^4.16.3",
     "web3": "^1.0.0-beta.36",
     "websocket": "^1.0.26"
-  },
-  "devDependencies": {
-    "nodemon": "^1.18.4"
   }
 }
