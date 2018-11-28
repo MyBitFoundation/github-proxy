@@ -29,6 +29,8 @@ let totalValueOfFund = 0;
 let totalPayoutOfFund = 0;
 let mybitInUsd = 0;
 
+let rateLimited = false;
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -127,6 +129,17 @@ async function getNextPageOfIssuesForRepo(reponame, cursor){
 async function processIssues(totalFundValue){
   //pull all the repositories with issues and comments
   const response = await axios(configForGraphGlRequest(queryAllIssuesAndComments));
+  if(response.data.errors && response.data.errors.length > 0 && response.data.errors[0].type === 'RATE_LIMITED'){
+    // wait for 2 hours to see if we are whitelisted
+    console.log("We hit the API limit, setting timeout to trigger in 2 hours.")
+    rateLimited = true;
+    clearInterval(mainInterval);
+    setTimeout(mainCycle, 7200 * 1000);
+    throw response.data.errors[0].type;
+  } else if(rateLimited){
+    console.log("We've been whitelisted!");
+    mainInterval = setInterval(mainCycle, refreshTimeInSeconds * 1000);
+  }
   let repos = response.data.data.organization.repositories.edges;
   let uniqueContributors = {};
   let totalPayout = 0;
@@ -250,9 +263,7 @@ function mainCycle(){
       mybitInUsd=val
       getFundingInfo();
     }).catch(err => {
-      console.log("Failed to fetch MYB price, error: " + err)
-      setTimeout(mainCycle, 2000);
-      return;
+      console.log(err);
     })
 }
 
@@ -260,8 +271,7 @@ function getFundingInfo(){
   getTotalValue()
     .then(fetchAllIssues)
     .catch(err => {
-    console.log("error fetching total fund value" + err);
-    setTimeout(getFundingInfo, 5000);
+      console.log("error fetching total fund value" + err);
   })
 }
 
@@ -274,14 +284,10 @@ function fetchAllIssues(totalFundValue){
     console.log("Fetched all the issues.")
   }).catch(err => {
     fetchingIssues = false;
-    console.log(err);
-    console.log("Fetching issues again in 5 seconds.")
-    setTimeout(() => fetchAllIssues(totalFundValue), 5000);
   })
 }
-
+let mainInterval = setInterval(mainCycle, refreshTimeInSeconds * 1000);
 mainCycle();
-setInterval(mainCycle, refreshTimeInSeconds * 1000)
 
 const port = process.env.PORT || 9001;
 app.listen(port);
