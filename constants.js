@@ -224,7 +224,7 @@ const addressesUsedToFund = [
 ]
 
 const mybitTickerCoinmarketcap = 1902;
-const refreshTimeInSeconds = 30;
+const refreshTimeInSeconds = 60 * 10;
 
 module.exports = {
   queryAllIssuesAndComments,
