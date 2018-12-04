@@ -181,6 +181,7 @@ query {
         },
         url,
         title,
+        body,
         number
         comments(first: ${COMMENTS_PER_PAGE}){
           pageInfo{
