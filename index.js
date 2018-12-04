@@ -168,7 +168,7 @@ async function processIssues(totalFundValue){
 
     //map all issues to pull information about each issue
     issuesOfRepo = await Promise.all(issuesOfRepo.edges.map( async ({node}) => {
-      const {createdAt, url, title, number, state} = node;
+      const {createdAt, url, title, body, number, state} = node;
 
       const labels = node.labels.edges.map(({node}) => node.name);
       let comments = node.comments;
@@ -231,6 +231,7 @@ async function processIssues(totalFundValue){
         merged,
         url,
         title,
+        body,
         contractAddress,
         repoName,
         labels,
