@@ -209,7 +209,7 @@ async function processIssues(totalFundValue){
 
       const valueInfo = !myBitValueFromGitcoin ?
         contractAddress && await getValueOfContract(contractAddress) :
-        { value: +myBitValueFromGitcoin };
+        { value: +myBitValueFromGitcoin, tokenSymbol: 'MYB' };
 
       let merged = false;
 
