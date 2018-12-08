@@ -174,19 +174,19 @@ async function processIssues(totalFundValue){
     issuesOfRepo = await Promise.all(issuesOfRepo.edges.map( async ({node}) => {
       const {createdAt, url, title, body, number, state} = node;
       const labels = node.labels.edges.map(({node}) => node.name);
-      
+
       let comments = node.comments, contractAddress, myBitValueFromGitcoin, match;
-      
+
       //handle comments pagination - same logic as above
       while(comments.pageInfo.hasNextPage){
-        
+
         const nextPageComments = await getNextPageOfCommentsOfIssue(repoName, number, comments.edges[comments.edges.length - 1].cursor);
         comments.edges = comments.edges.concat(nextPageComments.data.repository.issue.comments.edges);
         comments.pageInfo.hasNextPage = nextPageComments.data.repository.issue.comments.pageInfo.hasNextPage;
       }
-      
+
       comments = comments.edges;
-      
+
       for(let i = 0; i < comments.length; i++){
         const author = comments[i].node.author.login;
         //pull contract address
@@ -207,7 +207,7 @@ async function processIssues(totalFundValue){
         }
       }
 
-      const valueInfo = !myBitValueFromGitcoin ?
+      const valueInfo = isNaN(myBitValueFromGitcoin) ?
         contractAddress && await getValueOfContract(contractAddress) :
         { value: +myBitValueFromGitcoin };
 
@@ -236,7 +236,7 @@ async function processIssues(totalFundValue){
       if(state === "CLOSED" && !merged){
         return null;
       }
-      
+
       totalPayout = merged && valueInfo ? totalPayout + Number(valueInfo.value * mybitInUsd) : totalPayout;
       totalFundValue = !merged && valueInfo ? totalFundValue + Number(valueInfo.value * mybitInUsd) : totalFundValue;
 
