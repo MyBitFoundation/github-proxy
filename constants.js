@@ -221,7 +221,7 @@ const configForGraphGlRequest = query => {
 const etherscanEndPoint = address => `http://api.etherscan.io/api?module=account&action=tokentx&address=${address}&apikey=${process.env.ETHERSCAN_API_KEY}`
 
 const addressesUsedToFund = [
-  "0x7601387f7bc11f0ec554fe8d068af725781f004d",
+  "0xfd1e4b568bb3bcf706b0bac5960d4b91bacff96f", // New DDF Multi-Sig
 ]
 
 const mybitTickerCoinmarketcap = 1902;
