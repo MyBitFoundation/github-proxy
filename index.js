@@ -250,6 +250,7 @@ async function processIssues(totalFundValue){
         url,
         title,
         body,
+        comments,
         contractAddress,
         repoName,
         labels,
