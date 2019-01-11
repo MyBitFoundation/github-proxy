@@ -196,7 +196,11 @@ async function processIssues(totalFundValue){
             contractAddress = match[0];
           }
         }
-        if(author === "gitcoinbot") {
+        // We only need to get the value of the bounty for the first time, as the
+        // first comment is the one that has the bounty. This might not be true
+        // if new money comes, but we will have to see how it looks in order to
+        // escape for that one
+        if(author === "gitcoinbot" && !myBitValueFromGitcoin) {
           match = comments[i].node.body.match(/[0-9]+.[0-9]+\.*\w/g)
           if(match && match.length > 0){
             myBitValueFromGitcoin = match[0]
