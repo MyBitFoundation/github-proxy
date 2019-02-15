@@ -48,9 +48,13 @@ app.get('/api/issues', (req, res) => {
     });
 })
 
-async function getCurrentUsdPriceOf(ticker){
-  const {data} = await axios(`https://api.coinmarketcap.com/v2/ticker/${ticker}/`)
-  return data.data.quotes.USD.price;
+async function getCurrentUsdPriceOfMybit(){
+  try{
+    const { data } = await axios(`http://api.mybit.io/prices`)
+    return data.mybit.price;
+  }catch(err){
+    console.log(err);
+  }
 }
 
 async function getTotalValue(){
@@ -188,7 +192,9 @@ async function processIssues(totalFundValue){
       comments = comments.edges;
 
       for(let i = 0; i < comments.length; i++){
-        const author = comments[i].node.author.login;
+
+        // Considers posts made by accounts that have since been deleted
+        const author = comments[i].node.author && comments[i].node.author.login;
         //pull contract address
         if(author === "status-open-bounty"){
           match = comments[i].node.body.match(ethereumRegex());
@@ -278,7 +284,7 @@ async function processIssues(totalFundValue){
 }
 
 function mainCycle(){
-  getCurrentUsdPriceOf(mybitTickerCoinmarketcap)
+  getCurrentUsdPriceOfMybit()
     .then(val => {
       mybitInUsd=val
       getFundingInfo();
@@ -303,6 +309,7 @@ function fetchAllIssues(totalFundValue){
     fetchingIssues = false;
     console.log("Fetched all the issues.")
   }).catch(err => {
+    console.log(err)
     fetchingIssues = false;
   })
 }
